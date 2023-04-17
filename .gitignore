@@ -1,0 +1,22 @@
+test_data/
+
+__pycache__/*
+**/__pycache__/
+*.log
+*.pot
+*.pyc
+
+### macOS ###
+*.DS_Store
+
+# IDEs 
+.vscode/
+
+# Distribution / packaging
+.Python
+env/
+build/
+
+### DATA TEST ###
+test_data/*_results/
+saved_models/

@@ -1,0 +1,15 @@
+# numpy==1.15.2
+# scikit-image==0.14.0
+# torch
+# torchvision
+# pillow==8.1.1
+# opencv-python
+# paddlepaddle
+# paddlehub
+# gradio
+####SOD
+numpy
+scikit-image
+torch
+torchvision
+opencv-python
