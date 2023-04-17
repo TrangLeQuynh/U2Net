@@ -22,6 +22,12 @@ from data_loader import SalObjDataset
 from model import U2NET # full size version 173.6 MB
 from model import U2NETP # small version u2net 4.7 MB
 
+# transform
+transform=transforms.Compose([
+    RescaleT(320),
+    ToTensorLab(flag=0),
+])
+
 # normalize the predicted SOD probability map
 def normPRED(d):
     ma = torch.max(d)
@@ -31,7 +37,7 @@ def normPRED(d):
 
     return dn
 
-def save_output(image_name,pred,d_dir):
+def save_output(image_name, pred, d_dir):
 
     predict = pred
     predict = predict.squeeze()
@@ -52,39 +58,32 @@ def save_output(image_name,pred,d_dir):
 
     imo.save(d_dir+imidx+'.png')
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", '-m', type=str, default="u2net") # u2netp or u2net
-    return parser.parse_args()
+def preprocess(img_path):
+    image = io.imread(img_path)
+    imidx = np.array([0])
 
-def main():
-    args = parse_args()
+    label_3 = np.zeros(image.shape)
+    label = np.zeros(label_3.shape[0:2])
 
-    # --------- 1. get image path and name ---------
+    if(3==len(label_3.shape)):
+        label = label_3[:,:,0]
+    elif(2==len(label_3.shape)):
+        label = label_3
+
+    if(3==len(image.shape) and 2==len(label.shape)):
+        label = label[:,:,np.newaxis]
+    elif(2==len(image.shape) and 2==len(label.shape)):
+        image = image[:,:,np.newaxis]
+        label = label[:,:,np.newaxis]
+
+    sample = {'imidx':imidx, 'image':image, 'label':label}
+    return transform(sample)
+
+def build_model(args):
     # model_name=  'u2net'#u2netp
     model_name = args.model
-
-
-    image_dir = os.path.join(os.getcwd(), 'test_data', 'test_images')
-    prediction_dir = os.path.join(os.getcwd(), 'test_data', model_name + '_results' + os.sep)
     model_dir = os.path.join(os.getcwd(), 'saved_models', model_name, model_name + '.pth')
 
-    img_name_list = glob.glob(image_dir + os.sep + '*')
-    print(img_name_list)
-
-    # --------- 2. dataloader ---------
-    #1. dataloader
-    test_salobj_dataset = SalObjDataset(img_name_list = img_name_list,
-                                        lbl_name_list = [],
-                                        transform=transforms.Compose([RescaleT(320),
-                                                                      ToTensorLab(flag=0)])
-                                        )
-    test_salobj_dataloader = DataLoader(test_salobj_dataset,
-                                        batch_size=1,
-                                        shuffle=False,
-                                        num_workers=1)
-
-    # --------- 3. model define ---------
     if(model_name=='u2net'):
         print("...load U2NET---173.6 MB")
         net = U2NET(3,1)
@@ -98,32 +97,98 @@ def main():
     else:
         net.load_state_dict(torch.load(model_dir, map_location='cpu'))
     net.eval()
+    return net
 
-    # --------- 4. inference for each image ---------
-    for i_test, data_test in enumerate(test_salobj_dataloader):
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", '-m', type=str, default="u2net") # u2netp or u2net
+    parser.add_argument("--source", '-s', type=str, required=True)
+    return parser.parse_args()
 
-        print("inferencing:",img_name_list[i_test].split(os.sep)[-1])
+# def main():
+#     args = parse_args()
 
-        inputs_test = data_test['image']
-        inputs_test = inputs_test.type(torch.FloatTensor)
+#     # --------- 1. get image path and name ---------
+#     # model_name=  'u2net'#u2netp
+#     model_name = args.model
 
-        if torch.cuda.is_available():
-            inputs_test = Variable(inputs_test.cuda())
-        else:
-            inputs_test = Variable(inputs_test)
 
-        d1,d2,d3,d4,d5,d6,d7= net(inputs_test)
+#     image_dir = os.path.join(os.getcwd(), 'test_data', 'test_images')
+#     prediction_dir = os.path.join(os.getcwd(), 'test_data', model_name + '_results' + os.sep)
+#     model_dir = os.path.join(os.getcwd(), 'saved_models', model_name, model_name + '.pth')
 
-        # normalization
-        pred = d1[:,0,:,:]
-        pred = normPRED(pred)
+#     img_name_list = glob.glob(image_dir + os.sep + '*')
+#     print(img_name_list)
 
-        # save results to test_results folder
-        if not os.path.exists(prediction_dir):
-            os.makedirs(prediction_dir, exist_ok=True)
-        save_output(img_name_list[i_test],pred,prediction_dir)
+#     # --------- 2. dataloader ---------
+#     #1. dataloader
+#     test_salobj_dataset = SalObjDataset(img_name_list = img_name_list,
+#                                         lbl_name_list = [],
+#                                         transform=transforms.Compose([RescaleT(320),
+#                                                                       ToTensorLab(flag=0)])
+#                                         )
+#     test_salobj_dataloader = DataLoader(test_salobj_dataset,
+#                                         batch_size=1,
+#                                         shuffle=False,
+#                                         num_workers=1)
 
-        del d1,d2,d3,d4,d5,d6,d7
+#     # --------- 3. model define ---------
+#     net = build_model(args=args)
+
+#     # --------- 4. inference for each image ---------
+#     for i_test, data_test in enumerate(test_salobj_dataloader):
+
+#         print("inferencing:",img_name_list[i_test].split(os.sep)[-1])
+
+#         inputs_test = data_test['image']
+#         inputs_test = inputs_test.type(torch.FloatTensor)
+
+#         if torch.cuda.is_available():
+#             inputs_test = Variable(inputs_test.cuda())
+#         else:
+#             inputs_test = Variable(inputs_test)
+
+#         d1,d2,d3,d4,d5,d6,d7= net(inputs_test)
+
+#         # normalization
+#         pred = d1[:,0,:,:]
+#         pred = normPRED(pred)
+
+#         # save results to test_results folder
+#         if not os.path.exists(prediction_dir):
+#             os.makedirs(prediction_dir, exist_ok=True)
+#         save_output(img_name_list[i_test],pred,prediction_dir)
+
+#         del d1,d2,d3,d4,d5,d6,d7
+
+def main():
+    args = parse_args()
+
+    prediction_dir = os.path.join(os.getcwd(), 'test_data', args.model + '_results' + os.sep)
+
+    # Define model
+    net = build_model(args=args)
+    
+    # Inference image
+    img = preprocess(args.source)["image"]
+    img = img.type(torch.FloatTensor)
+    if torch.cuda.is_available():
+        img = Variable(img.unsqueeze(0).cuda())
+    else:
+        img = Variable(img.unsqueeze(0))
+
+    d1,d2,d3,d4,d5,d6,d7= net(img)
+
+    # normalization
+    pred = d1[:,0,:,:]
+    pred = normPRED(pred)
+
+    # save results to test_results folder
+    if not os.path.exists(prediction_dir):
+        os.makedirs(prediction_dir, exist_ok=True)
+    save_output(args.source, pred, prediction_dir)
+
+    del d1,d2,d3,d4,d5,d6,d7
 
 if __name__ == "__main__":
     main()
