@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms#, utils
 import argparse
+import time
+import os
 # import torch.optim as optim
 
 import numpy as np
@@ -90,19 +92,30 @@ def build_model(args):
     elif(model_name=='u2netp'):
         print("...load U2NEP---4.7 MB")
         net = U2NETP(3,1)
-    print("torch.cuda.is_available ",  torch.cuda.is_available())
-    if torch.cuda.is_available():
+    if args.gpu is True:
         net.load_state_dict(torch.load(model_dir))
         net.cuda()
     else:
         net.load_state_dict(torch.load(model_dir, map_location='cpu'))
     net.eval()
+
+    if args.jit is True:
+        net_jit_path = os.path.join('saved_models', model_name, model_name + '_jit.pt')
+        if os.path.isfile(net_jit_path) is False:
+            input = torch.rand(1, 3, 320, 320)
+            net = torch.jit.trace(net, input.cuda() if args.gpu is True else input, strict=False)
+            torch.jit.save(net, net_jit_path)
+        else:
+            del net
+            net = torch.jit.load(net_jit_path)
     return net
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", '-m', type=str, default="u2net") # u2netp or u2net
     parser.add_argument("--source", '-s', type=str, required=True)
+    parser.add_argument("--gpu", '-g',action='store_true', default=False)
+    parser.add_argument("--jit", '-j',action='store_true', default=False)
     return parser.parse_args()
 
 # def main():
@@ -143,7 +156,7 @@ def parse_args():
 #         inputs_test = data_test['image']
 #         inputs_test = inputs_test.type(torch.FloatTensor)
 
-#         if torch.cuda.is_available():
+#         if args.gpu:
 #             inputs_test = Variable(inputs_test.cuda())
 #         else:
 #             inputs_test = Variable(inputs_test)
@@ -172,12 +185,15 @@ def main():
     # Inference image
     img = preprocess(args.source)["image"]
     img = img.type(torch.FloatTensor)
-    if torch.cuda.is_available():
+    if args.gpu is True:
         img = Variable(img.unsqueeze(0).cuda())
     else:
         img = Variable(img.unsqueeze(0))
 
+    begin = time.time()
     d1,d2,d3,d4,d5,d6,d7= net(img)
+    end = time.time()
+    print("{} ms".format(1000 *(end - begin)))
 
     # normalization
     pred = d1[:,0,:,:]
