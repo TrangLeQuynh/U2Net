@@ -48,6 +48,7 @@ def save_output(image_name, pred, d_dir):
 
     im = Image.fromarray(predict_np*255).convert('RGB')
     img_name = image_name.split(os.sep)[-1]
+
     image = io.imread(image_name)
     imo = im.resize((image.shape[1],image.shape[0]),resample=Image.BILINEAR)
 
@@ -58,7 +59,6 @@ def save_output(image_name, pred, d_dir):
     imidx = bbb[0]
     for i in range(1,len(bbb)):
         imidx = imidx + "." + bbb[i]
-
     imo.save(d_dir+imidx+'.png')
 
 def preprocess(img_path):
