@@ -7,7 +7,7 @@ try:
   import onnx
   import onnxruntime
 except ImportError as e:
-  raise ImportError(f'Please install onnx and onnxruntime firse. {e}')
+  raise ImportError(f'Please install onnx and onnxruntime first. {e}')
 
 def parse_args():
   parser = argparse.ArgumentParser()
@@ -24,7 +24,7 @@ def verify_onnx_model(model_path):
   #representation of the graph
   # print(onnx.helper.printable_graph(onnx_model.graph))
 
-def convert_to_onxn(model, save_path):
+def convert_to_onnx(model, save_path):
   input = torch.randn(1, 3, 320, 320)
   with torch.no_grad():
     torch.onnx.export(
@@ -32,7 +32,7 @@ def convert_to_onxn(model, save_path):
       input,
       save_path,
       export_params=True,
-      opset_version=11,
+      opset_version=11,#default 13
       do_constant_folding=True, #to execute constant folding for optimization
       verbose=False,
       input_names=["img"],
@@ -77,5 +77,5 @@ if __name__ == "__main__":
   net = build_model(args=args)
 
   onnx_path = f"{args.model}.onnx"
-  convert_to_onxn(net, onnx_path)
+  convert_to_onnx(net, onnx_path)
   verify_onnx_model(onnx_path)
