@@ -23,6 +23,7 @@ from data_loader import SalObjDataset
 
 from model import U2NET # full size version 173.6 MB
 from model import U2NETP # small version u2net 4.7 MB
+from tools.utils import check_size
 
 # transform
 transform=transforms.Compose([
@@ -108,6 +109,7 @@ def build_model(args):
         else:
             del net
             net = torch.jit.load(net_jit_path)
+    check_size(model=net)
     return net
 
 def parse_args():
