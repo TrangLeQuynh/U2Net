@@ -31,15 +31,6 @@ transform=transforms.Compose([
     ToTensorLab(flag=0),
 ])
 
-# normalize the predicted SOD probability map
-def normPRED(d):
-    ma = torch.max(d)
-    mi = torch.min(d)
-
-    dn = (d-mi)/(ma-mi)
-
-    return dn
-
 def save_output(image_name, pred, d_dir):
 
     predict = pred
@@ -112,14 +103,6 @@ def build_model(args):
     check_size(model=net)
     return net
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", '-m', type=str, default="u2net") # u2netp or u2net
-    parser.add_argument("--source", '-s', type=str, required=True)
-    parser.add_argument("--gpu", '-g',action='store_true', default=False)
-    parser.add_argument("--jit", '-j',action='store_true', default=False)
-    return parser.parse_args()
-
 # def main():
 #     args = parse_args()
 
@@ -174,9 +157,17 @@ def parse_args():
 #             os.makedirs(prediction_dir, exist_ok=True)
 #         save_output(img_name_list[i_test],pred,prediction_dir)
 
-#         del d1,d2,d3,d4,d5,d6,d7
+#         del d1,d2,d3,d4,d5,d6,d7    
 
-def main():
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", '-m', type=str, default="u2net") # u2netp or u2net
+    parser.add_argument("--source", '-s', type=str, required=True)
+    parser.add_argument("--gpu", '-g',action='store_true', default=False)
+    parser.add_argument("--jit", '-j',action='store_true', default=False)
+    return parser.parse_args()
+
+if __name__ == "__main__":
     args = parse_args()
 
     prediction_dir = os.path.join(os.getcwd(), 'test_data', args.model + '_results' + os.sep)
@@ -193,20 +184,11 @@ def main():
         img = Variable(img.unsqueeze(0))
 
     begin = time.time()
-    d1,d2,d3,d4,d5,d6,d7= net(img)
+    pred= net(img)
     end = time.time()
     print("{} ms".format(1000 *(end - begin)))
-
-    # normalization
-    pred = d1[:,0,:,:]
-    pred = normPRED(pred)
 
     # save results to test_results folder
     if not os.path.exists(prediction_dir):
         os.makedirs(prediction_dir, exist_ok=True)
     save_output(args.source, pred, prediction_dir)
-
-    del d1,d2,d3,d4,d5,d6,d7
-
-if __name__ == "__main__":
-    main()
