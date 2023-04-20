@@ -52,7 +52,7 @@ def create_metadata_tflite():
 
   """ Creates output info. """
   output_meta = _metadata_fb.TensorMetadataT()
-  output_meta.name = "pred"
+  output_meta.name = "d0"
 
   """ Creates subgraph info. """
   subgraph = _metadata_fb.SubGraphMetadataT()

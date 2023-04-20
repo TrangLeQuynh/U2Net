@@ -36,8 +36,8 @@ def convert_to_onnx(model, save_path):
       do_constant_folding=True, #to execute constant folding for optimization
       verbose=False,
       input_names=["img"],
-      # output_names=["d0", "d1", "d2", "d3", "d4", "d5", "d6"],
-      output_names=["pred"],
+      output_names=["d0", "d1", "d2", "d3", "d4", "d5", "d6"],
+      # output_names=["d0"],
       # dynamic_axes={}
     )
 
