@@ -18,3 +18,4 @@ build/
 ### DATA TEST ###
 test_data/*_results/*
 saved_models/*
+outputs
